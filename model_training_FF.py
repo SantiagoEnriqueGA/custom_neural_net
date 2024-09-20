@@ -6,15 +6,15 @@ from sklearn.preprocessing import StandardScaler
 
 from ml_utils import NeuralNetwork, AdamOptimizer
 
-# file_orig = "data/pima-indians-diabetes_prepared.csv"
-# df = pd.read_csv(file_orig)
-# X = df.drop('y', axis=1).to_numpy()
-# y = df['y'].to_numpy().reshape(-1, 1)
-
-file_orig = "data/Wisconsin_breast_prognostic.csv"
+file_orig = "data/pima-indians-diabetes_prepared.csv"
 df = pd.read_csv(file_orig)
-X = df.drop('diagnosis', axis=1).to_numpy()
-y = df['diagnosis'].to_numpy().reshape(-1, 1)
+X = df.drop('y', axis=1).to_numpy()
+y = df['y'].to_numpy().reshape(-1, 1)
+
+# file_orig = "data/Wisconsin_breast_prognostic.csv"
+# df = pd.read_csv(file_orig)
+# X = df.drop('diagnosis', axis=1).to_numpy()
+# y = df['diagnosis'].to_numpy().reshape(-1, 1)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
 
