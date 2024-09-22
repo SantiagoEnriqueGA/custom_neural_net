@@ -16,16 +16,13 @@ This module contains custom implementations of the KMeans and DBSCAN clustering 
 - **AdamOptimizer:** Implements the Adam optimization algorithm for training neural networks. It includes parameters such as learning rate, beta values for moment estimates, and a regularization parameter.
 
 - **CrossEntropyLoss:** Custom implementation of the cross-entropy loss for multi-class classification, calculated using the formula:
-  \[
-  \text{Loss} = -\frac{1}{m} \sum (y \cdot \log(p) + (1 - y) \cdot \log(1 - p))
-  \]
+  `Loss = - (1/m) * Σ (y * log(p) + (1 - y) * log(1 - p))`
   where `m` is the number of samples.
 
 - **BCEWithLogitsLoss:** Custom binary cross-entropy loss implementation with logits. It calculates loss using the formula:
-  \[
-  \text{Loss} = -\text{mean}(y \cdot \log(p) + (1 - y) \cdot \log(1 - p))
-  \]
+  `Loss = -mean(y * log(p) + (1 - y) * log(1 - p))`
   This class applies the sigmoid function to logits to obtain probabilities.
+
 
 - **NeuralNetwork:** A class for training and evaluating a custom neural network model. Key features include:
   - Supports multiple layers with customizable sizes and activation functions.
