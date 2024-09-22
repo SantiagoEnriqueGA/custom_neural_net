@@ -33,7 +33,7 @@ class TestNeuralNetwork(unittest.TestCase):
     def test_backward(self):
         """Tests the backward method"""
         self.nn.forward(self.X)                                 # Forward pass
-        self.nn.backward(self.X, self.y)                        # Backward pass
+        self.nn.backward(self.y)                                # Backward pass
         for layer in self.nn.layers:                            # Check gradients                
             dW, db = layer.gradients                                # Get gradients
             self.assertEqual(dW.shape, layer.weights.shape)         # Check shape, weights
