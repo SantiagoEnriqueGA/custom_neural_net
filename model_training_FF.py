@@ -19,7 +19,7 @@ def load_pima_diabetes_data(file_path):
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
     
-    return X_train, X_test, y_train, y_test
+    return X, y, X_train, X_test, y_train, y_test
 
 # Function to load and preprocess Wisconsin Breast Prognostic dataset
 def load_breast_prognostic_data(file_path):
@@ -35,10 +35,10 @@ def load_breast_prognostic_data(file_path):
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
     
-    return X_train, X_test, y_train, y_test
+    return X, y, X_train, X_test, y_train, y_test
 
 # Function to train and evaluate the Neural Network
-def train_and_evaluate_model(X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range, epochs=100, batch_size=32):
+def train_and_evaluate_model(X, y ,X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range, epochs=100, batch_size=32):
     input_size = X_train.shape[1]
     output_size = 1
 
@@ -51,6 +51,7 @@ def train_and_evaluate_model(X_train, X_test, y_train, y_test, param_grid, num_l
         param_grid,
         num_layers_range,
         layer_size_range,
+        output_size,
         X_train,
         y_train,
         X_test,
@@ -67,7 +68,7 @@ def train_and_evaluate_model(X_train, X_test, y_train, y_test, param_grid, num_l
     nn = NeuralNetwork([input_size] + [best_params['layer_size']] * best_params['num_layers'] + [output_size], 
                        dropout_rate=best_params['dropout_rate'], 
                        reg_lambda=best_params['reg_lambda'])
-    nn.train(X_train, y_train, X_test, y_test, optimizer, epochs=epochs, batch_size=batch_size)
+    nn.train(X_train, y_train, X_test, y_test, optimizer=optimizer, epochs=epochs, batch_size=batch_size)
 
     # Evaluate the Model
     test_accuracy, y_pred = nn.evaluate(X_test, y_test)
@@ -88,13 +89,15 @@ def main():
 
     # Train and evaluate on Pima Indians Diabetes dataset
     print("\n--- Training on Pima Indians Diabetes Dataset ---")
-    X_train, X_test, y_train, y_test = load_pima_diabetes_data("data/pima-indians-diabetes_prepared.csv")
-    train_and_evaluate_model(X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range)
+    
+    X, y, X_train, X_test, y_train, y_test = load_pima_diabetes_data("data/pima-indians-diabetes_prepared.csv")
+    train_and_evaluate_model(X, y, X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range)
 
     # Train and evaluate on Wisconsin Breast Prognostic dataset
     print("\n--- Training on Wisconsin Breast Prognostic Dataset ---")
-    X_train, X_test, y_train, y_test = load_breast_prognostic_data("data/Wisconsin_breast_prognostic.csv")
-    train_and_evaluate_model(X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range)
+    
+    X, y, X_train, X_test, y_train, y_test = load_breast_prognostic_data("data/Wisconsin_breast_prognostic.csv")
+    train_and_evaluate_model(X, y, X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range)
 
 if __name__ == "__main__":
     main()

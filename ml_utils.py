@@ -102,9 +102,11 @@ class NeuralNetwork:
         - layer_sizes (list): A list of integers representing the sizes of each layer in the neural network.
         - dropout_rate (float): The dropout rate to be applied during training. Default is 0.2.
         - reg_lambda (float): The regularization lambda value. Default is 0.01.
+        - activations (list): A list of activation functions for each layer. Default is ['relu', 'relu', ... 'softmax'].
     """
     
     def __init__(self, layer_sizes, dropout_rate=0.2, reg_lambda=0.01, activations=None):
+        self.layer_sizes = layer_sizes                                          # List of layer sizes
         self.layers = []                                                        # List to store the layers of the neural network
         self.dropout_rate = dropout_rate                                        # Dropout rate
         self.reg_lambda = reg_lambda                                            # Regularization lambda
@@ -122,7 +124,20 @@ class NeuralNetwork:
             activations = ['relu'] * (len(layer_sizes) - 2) + ['softmax']       # Default to ReLU for hidden layers and Softmax for the output layer
         for i in range(1, len(layer_sizes)):
             self.layers.append(Layer(layer_sizes[i-1], layer_sizes[i], activations[i-1]))  # Create layers with input and output sizes
-            
+
+    def __repr__(self):
+        layers = ""
+        for i in range(len(self.layers)):
+            layers += f"\n\tLayer {i}: {self.layers[i].weights.shape[0]} neurons with {self.layers[i].weights.shape[1]} weights"
+        
+        return f"NeuralNetwork(\nlayer_sizes={self.layer_sizes}, \nlayers={layers}, \ndropout_rate={self.dropout_rate}, \nreg_lambda={self.reg_lambda}, \nweights={self.weights}, \nbiases={self.biases}, \nactivations={self.activations})"
+
+    def __str__(self):
+        layers = ""
+        for i in range(len(self.layers)):
+            layers += f"\n\tLayer {i}: {self.layers[i].weights.shape[0]} neurons with {self.layers[i].weights.shape[1]} weights"
+        return f"Neural Network with layer sizes {self.layer_sizes}, \nlayer details: {layers}, \ndropout rate: {self.dropout_rate}, \nregularization lambda: {self.reg_lambda}"
+
     def forward(self, X):
         """
         Performs forward propagation through the neural network.
@@ -190,18 +205,19 @@ class NeuralNetwork:
 
             self.layers[i].gradients = (dW, db)                                                     # Store the gradients
 
-    def train(self, X_train, y_train, X_test, y_test, optimizer, epochs=100, batch_size=32, early_stopping_threshold=5, p=True):
+    def train(self, X_train, y_train, X_test=None, y_test=None, optimizer=AdamOptimizer(learning_rate=0.0001), epochs=100, batch_size=32, early_stopping_threshold=5, p=True):
         """
         Trains the neural network model.
         Parameters:
             - X_train (numpy.ndarray): Training data features.
             - y_train (numpy.ndarray): Training data labels.
-            - X_test (numpy.ndarray): Test data features.
-            - y_test (numpy.ndarray): Test data labels.
-            - optimizer (Optimizer): The optimizer used for updating the model parameters.
+            - X_test (numpy.ndarray): Test data features, optional (default: None).
+            - y_test (numpy.ndarray): Test data labels, optional (default: None).
+            - optimizer (Optimizer): The optimizer used for updating the model parameters (default: Adam, lr=0.0001).
             - epochs (int): Number of training epochs (default: 100).
             - batch_size (int): Batch size for mini-batch gradient descent (default: 32).
             - early_stopping_threshold (int): Number of epochs to wait for improvement in training loss before early stopping (default: 5).
+            - p (bool): Whether to print training progress (default: True).
         Returns: None
         """
         optimizer.initialize(self.layers)   # Initialize the optimizer
@@ -229,11 +245,16 @@ class NeuralNetwork:
             train_accuracy, train_pred = self.evaluate(X_train, y_train)
             
             # Calculate test loss and accuracy
-            test_loss = self.calculate_loss(X_test, y_test)
-            test_accuracy, test_pred = self.evaluate(X_test, y_test)
+            if X_test is not None and y_test is not None:
+                test_loss = self.calculate_loss(X_test, y_test)
+                test_accuracy, test_pred = self.evaluate(X_test, y_test)
             
             # Print the training progress
-            if p: print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}")
+            if p: 
+                if X_test is not None and y_test is not None:
+                    print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.4f}")
+                else:
+                    print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}")
 
             # Implement early stopping
             if train_loss < best_loss:      # If training loss improves
@@ -292,7 +313,9 @@ class NeuralNetwork:
         
         return accuracy, predicted                          # Return accuracy and predicted labels
     
-    def tune_hyperparameters(self, param_grid, num_layers_range, layer_size_range, X_train, y_train, X_val, y_val, optimizer_type, lr_range, epochs=100, batch_size=32):
+    def tune_hyperparameters(self, param_grid, num_layers_range, layer_size_range, output_size,
+                             X_train, y_train, X_val, y_val, 
+                             optimizer_type, lr_range, epochs=100, batch_size=32):
         """
         Performs hyperparameter tuning using grid search.
         
@@ -300,6 +323,7 @@ class NeuralNetwork:
             - param_grid (dict): A dictionary where keys are parameter names and values are lists of values to try.
             - num_layers_range (tuple): A tuple (min_layers, max_layers, step) for the number of layers.
             - layer_size_range (tuple): A tuple (min_size, max_size, step) for the layer sizes.
+            - output_size (int): The size of the output layer.
             - X_train (numpy.ndarray): Training data features.
             - y_train (numpy.ndarray): Training data labels.
             - X_val (numpy.ndarray): Validation data features.
@@ -321,7 +345,7 @@ class NeuralNetwork:
         best_accuracy = 0
         best_params = {}
 
-        keys, values = zip(*param_grid.items())
+        keys, values = zip(*param_grid.items()) # Unzip the parameter grid
         
         # Generate layer configurations
         num_layers_options = range(num_layers_range[0], num_layers_range[1] + 1, num_layers_range[2])
@@ -338,9 +362,10 @@ class NeuralNetwork:
                             np.prod([len(value) for value in values]))
         
         with tqdm(total=total_iterations, desc="Tuning Hyperparameters") as pbar:
-            for num_layers in num_layers_options:
-                for layer_size in layer_size_options:
-                    layer_structure = [X_train.shape[1]] + [layer_size] * num_layers + [1]  # Output layer size is 1
+            for num_layers in num_layers_options:           # For each number of layers
+                for layer_size in layer_size_options:       # For each layer size
+                    
+                    layer_structure = [X_train.shape[1]] + [layer_size] * num_layers + [output_size]
                     for combination in product(*values):
                         params = dict(zip(keys, combination))
                         
@@ -368,6 +393,9 @@ class NeuralNetwork:
                             # Check if this is the best accuracy
                             if accuracy > best_accuracy:
                                 best_accuracy = accuracy
+                                print(f"\nNew best accuracy: {best_accuracy:.4f} with combination: {params}, {num_layers} layers of size {layer_size}, learning rate {lr}")
+                                print(f"New best accuracy: {best_accuracy:.4f} with combination: {params}, {num_layers} layers of size {layer_size}, learning rate {lr}")
+                                
                                 best_params = {**params, 'num_layers': num_layers, 'layer_size': layer_size, 'learning_rate': lr}
                             
                             pbar.update(1)  # Update the progress bar after each combination
@@ -391,8 +419,6 @@ class NeuralNetwork:
             return AdamOptimizer(learning_rate)
         else:
             raise ValueError(f"Unknown optimizer type: {optimizer_type}")
-
-
 
 class Layer:
     """
@@ -441,7 +467,6 @@ class Layer:
             raise ValueError("Softmax derivative is not typically used directly")
         else:
             raise ValueError(f"Unsupported activation function: {self.activation}")
-
 
 class Activation:
     """
@@ -524,70 +549,28 @@ class Activation:
         return exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
 
 
-def test_breast_cancer():
-    """Test the neural network model on the Breast Cancer dataset."""
+
+def test_model(load_data_func, nn_layers, dropout_rate, reg_lambda, test_size=0.2):
+    """Generic function to test the neural network model on a given dataset."""
     import random
     np.random.seed(42)
     random.seed(42)
     
-    from sklearn.datasets import load_breast_cancer
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
-    
-    # Load the dataset
-    data = load_breast_cancer()
-    X = data.data
-    y = data.target.reshape(-1, 1)
-
-    print(f"\nTesting on Breast Cancer dataset:")
-    print(f"--------------------------------------------------------------------------")
-    print(f"X shape: {X.shape}, Y shape: {y.shape}")
-
-    # Split the dataset
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    # Standardize the dataset
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
-
-    # Initialize the neural network and optimizer
-    nn = NeuralNetwork([X_train.shape[1], 100, 25, 1], dropout_rate=0.2, reg_lambda=0.0)
-    optimizer = AdamOptimizer(learning_rate=0.001)
-
-    # Train the neural network
-    nn.train(X_train, y_train, X_test, y_test, optimizer, epochs=100, batch_size=32)
-
-    # Evaluate the neural network
-    accuracy, predicted = nn.evaluate(X_test, y_test)
-    print(f"Final Accuracy: {accuracy}")
-
-    # Print classification report
     from sklearn.metrics import classification_report
-    print("Classification Report:")
-    print(classification_report(y_test, predicted, zero_division=0))
-    
-def test_iris():
-    """"Test the neural network model on the Iris dataset."""
-    import random
-    np.random.seed(42)
-    random.seed(42)
-    
-    from sklearn.datasets import load_iris
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import StandardScaler
-    
+
     # Load the dataset
-    data = load_iris()
+    data = load_data_func()
     X = data.data
     y = data.target
 
-    print(f"\nTesting on Iris dataset:")
+    print(f"\nTesting on {data.DESCR.splitlines()[0]} dataset:")
     print(f"--------------------------------------------------------------------------")
     print(f"X shape: {X.shape}, Y shape: {y.shape}")
 
     # Split the dataset
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
 
     # Standardize the dataset
     scaler = StandardScaler()
@@ -595,7 +578,7 @@ def test_iris():
     X_test = scaler.transform(X_test)
 
     # Initialize the neural network and optimizer
-    nn = NeuralNetwork([X_train.shape[1], 100, 25, 3], dropout_rate=0.1, reg_lambda=0.0)
+    nn = NeuralNetwork(nn_layers, dropout_rate=dropout_rate, reg_lambda=reg_lambda)
     optimizer = AdamOptimizer(learning_rate=0.001)
 
     # Train the neural network
@@ -606,10 +589,20 @@ def test_iris():
     print(f"Final Accuracy: {accuracy}")
 
     # Print classification report
-    from sklearn.metrics import classification_report
     print("Classification Report:")
     print(classification_report(y_test, predicted, zero_division=0))
+    
+    print(f"End Neural Network State: \n{str(nn)}")
 
+def test_iris():
+    """Test the neural network model on the Iris dataset."""
+    from sklearn.datasets import load_iris
+    test_model(load_iris, [4, 100, 25, 3], dropout_rate=0.1, reg_lambda=0.0, test_size=0.1)
+
+def test_breast_cancer():
+    """Test the neural network model on the Breast Cancer dataset."""
+    from sklearn.datasets import load_breast_cancer
+    test_model(load_breast_cancer, [30, 100, 25, 1], dropout_rate=0.2, reg_lambda=0.0, test_size=0.2)
 
 if __name__ == "__main__":
     test_breast_cancer()
