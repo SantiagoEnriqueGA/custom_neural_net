@@ -1,9 +1,15 @@
+import sched
 import pandas as pd
 import numpy as np
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from ml_utils import NeuralNetwork, AdamOptimizer
 from sklearn.metrics import classification_report
+
+from ml_utils import NeuralNetwork, AdamOptimizer
+from ml_utils import lr_scheduler_exp, lr_scheduler_step, lr_scheduler_plateau
+
+
 
 # Function to load and preprocess Pima Indians Diabetes dataset
 def load_pima_diabetes_data(file_path):
@@ -48,8 +54,14 @@ def train_and_evaluate_model(X_train, X_test, y_train, y_test,
     # Initialize Neural Network
     nn = NeuralNetwork([input_size] + layers + [output_size], dropout_rate=dropout, reg_lambda=reg_lambda, activations=activations)
     optimizer = AdamOptimizer(learning_rate=lr)
+    scheduler = lr_scheduler_step(optimizer, lr_decay=0.1, lr_decay_epoch=10)  # Learning rate scheduler
+    scheduler = lr_scheduler_exp(optimizer, lr_decay=0.1, lr_decay_epoch=10)  # Learning rate scheduler
+    
+    sub_scheduler = lr_scheduler_step(optimizer, lr_decay=0.1, lr_decay_epoch=10)  # Learning rate scheduler
+    scheduler = lr_scheduler_plateau(sub_scheduler, patience=5, threshold=0.001)  # Learning rate scheduler
 
-    nn.train(X_train, y_train, X_test, y_test, optimizer=optimizer, epochs=epochs, batch_size=batch_size, early_stopping_threshold=10)
+
+    nn.train(X_train, y_train, X_test, y_test, optimizer=optimizer, lr_scheduler=scheduler,epochs=epochs, batch_size=batch_size, early_stopping_threshold=10)
 
     # Evaluate the Model
     test_accuracy, y_pred = nn.evaluate(X_test, y_test)
