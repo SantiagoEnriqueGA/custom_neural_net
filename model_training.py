@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report
 
-from ml_utils import NeuralNetwork, AdamOptimizer, SGDOptimizer
+from ml_utils import NeuralNetwork, AdamOptimizer, SGDOptimizer, AdadeltaOptimizer
 from ml_utils import lr_scheduler_exp, lr_scheduler_step, lr_scheduler_plateau
 
 
@@ -53,10 +53,13 @@ def train_and_evaluate_model(X_train, X_test, y_train, y_test,
 
     # Initialize Neural Network
     nn = NeuralNetwork([input_size] + layers + [output_size], dropout_rate=dropout, reg_lambda=reg_lambda, activations=activations)
-    optimizer = AdamOptimizer(learning_rate=lr)    
+    optimizer = AdamOptimizer(learning_rate=lr)
     
-    scheduler = lr_scheduler_step(optimizer, lr_decay=0.1, lr_decay_epoch=10)  # Learning rate scheduler
-    scheduler = lr_scheduler_exp(optimizer, lr_decay=0.1, lr_decay_epoch=10)  # Learning rate scheduler
+    # optimizer = SGDOptimizer(learning_rate=lr, momentum=0.25, reg_lambda=0.1)
+    # optimizer = AdadeltaOptimizer(learning_rate=lr, rho=0.95, epsilon=1e-6, reg_lambda=0.0)
+    
+    # scheduler = lr_scheduler_step(optimizer, lr_decay=0.1, lr_decay_epoch=10)  # Learning rate scheduler
+    # scheduler = lr_scheduler_exp(optimizer, lr_decay=0.1, lr_decay_epoch=10)  # Learning rate scheduler
     
     sub_scheduler = lr_scheduler_step(optimizer, lr_decay=0.1, lr_decay_epoch=10)  # Learning rate scheduler
     scheduler = lr_scheduler_plateau(sub_scheduler, patience=5, threshold=0.001)  # Learning rate scheduler

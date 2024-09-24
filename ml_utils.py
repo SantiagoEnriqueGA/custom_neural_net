@@ -91,6 +91,57 @@ class SGDOptimizer:
         layer.weights += self.velocity[index] - self.learning_rate * self.reg_lambda * layer.weights    # Update weights
         layer.biases -= self.learning_rate * db                                                         # Update biases
 
+class AdadeltaOptimizer:
+    """
+    Adadelta optimizer class for training neural networks.
+    Formula: 
+        E[g^2]_t = rho * E[g^2]_{t-1} + (1 - rho) * g^2
+        Delta_x = - (sqrt(E[delta_x^2]_{t-1} + epsilon) / sqrt(E[g^2]_t + epsilon)) * g
+        E[delta_x^2]_t = rho * E[delta_x^2]_{t-1} + (1 - rho) * Delta_x^2
+    Derived from: https://arxiv.org/abs/1212.5701
+    Args:
+        learning_rate (float, optional): The learning rate for the optimizer. Defaults to 1.0.
+        rho (float, optional): The decay rate. Defaults to 0.95.
+        epsilon (float, optional): A small value to prevent division by zero. Defaults to 1e-6.
+        reg_lambda (float, optional): The regularization parameter. Defaults to 0.0.
+    """
+    def __init__(self, learning_rate=1.0, rho=0.95, epsilon=1e-6, reg_lambda=0.0):
+        self.learning_rate = learning_rate      # Learning rate
+        self.rho = rho                          # Decay rate
+        self.epsilon = epsilon                  # Small value to prevent division by zero
+        self.reg_lambda = reg_lambda            # Regularization parameter
+        
+        self.E_g2 = []                          # Running average of squared gradients
+        self.E_delta_x2 = []                    # Running average of squared parameter updates
+
+    def initialize(self, layers):
+        """
+        Initializes the running averages for each layer's weights.
+        Args: layers (list): List of layers in the neural network.
+        Returns: None
+        """
+        for layer in layers:                                    # For each layer in the neural network..
+            self.E_g2.append(np.zeros_like(layer.weights))      # Initialize running average of squared gradients
+            self.E_delta_x2.append(np.zeros_like(layer.weights))# Initialize running average of squared parameter updates
+
+    def update(self, layer, dW, db, index):
+        """
+        Updates the weights and biases of a layer using the Adadelta optimization algorithm.
+        Args:
+            layer (Layer): The layer to update.
+            dW (ndarray): The gradient of the weights.
+            db (ndarray): The gradient of the biases.
+            index (int): The index of the layer.
+        Returns: None
+        """
+        self.E_g2[index] = self.rho * self.E_g2[index] + (1 - self.rho) * np.square(dW)  # Update running average of squared gradients
+        delta_x = - (np.sqrt(self.E_delta_x2[index] + self.epsilon) / 
+                     np.sqrt(self.E_g2[index] + self.epsilon)) * dW                     # Compute parameter update
+        self.E_delta_x2[index] = self.rho * self.E_delta_x2[index] + (1 - self.rho) * np.square(delta_x)  # Update running average of squared parameter updates
+
+        layer.weights += delta_x - self.learning_rate * self.reg_lambda * layer.weights  # Update weights
+        layer.biases -= self.learning_rate * db                                         # Update biases
+
 class lr_scheduler_step:
     """
     Learning rate scheduler class for training neural networks.
