@@ -38,7 +38,7 @@ def load_breast_prognostic_data(file_path):
     return X, y, X_train, X_test, y_train, y_test
 
 # Function to train and evaluate the Neural Network
-def train_and_evaluate_model(X, y ,X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range, epochs=100, batch_size=32):
+def hyper_train_and_evaluate_model(X, y ,X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range, epochs=100, batch_size=32):
     input_size = X_train.shape[1]
     output_size = 1
 
@@ -91,13 +91,13 @@ def main():
     print("\n--- Training on Pima Indians Diabetes Dataset ---")
     
     X, y, X_train, X_test, y_train, y_test = load_pima_diabetes_data("data/pima-indians-diabetes_prepared.csv")
-    train_and_evaluate_model(X, y, X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range)
+    hyper_train_and_evaluate_model(X, y, X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range)
 
     # Train and evaluate on Wisconsin Breast Prognostic dataset
     print("\n--- Training on Wisconsin Breast Prognostic Dataset ---")
     
     X, y, X_train, X_test, y_train, y_test = load_breast_prognostic_data("data/Wisconsin_breast_prognostic.csv")
-    train_and_evaluate_model(X, y, X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range)
+    hyper_train_and_evaluate_model(X, y, X_train, X_test, y_train, y_test, param_grid, num_layers_range, layer_size_range, lr_range)
 
 if __name__ == "__main__":
     main()

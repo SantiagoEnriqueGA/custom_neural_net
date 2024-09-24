@@ -223,8 +223,10 @@ class NeuralNetwork:
         optimizer.initialize(self.layers)   # Initialize the optimizer
         best_loss = float('inf')            # Initialize best loss to infinity
         patience = 0                        # Initialize patience for early stopping
-
+        
         for epoch in range(epochs):
+            for layer in self.layers: layer.zero_grad()             # Reset gradients to zero for each layer
+            
             indices = np.arange(X_train.shape[0])                   # Create indices for shuffling
             np.random.shuffle(indices)                              # Shuffle indices
             X_train, y_train = X_train[indices], y_train[indices]   # Shuffle the training data
@@ -433,6 +435,10 @@ class Layer:
         self.biases = np.zeros((1, output_size))                        # Initialize biases with zeros
         self.activation = activation                                    # Activation function name
         self.gradients = None                                           # Initialize gradients to None
+        
+    def zero_grad(self):
+        """Reset the gradients of the weights and biases to zero."""
+        self.gradients = None
 
     def activate(self, Z):
         """Apply the activation function based on the layer's configuration."""
@@ -471,6 +477,11 @@ class Layer:
 class Activation:
     """
     This class contains various activation functions and their corresponding derivatives for use in neural networks.
+    relu: Rectified Linear Unit activation function. Returns the input directly if it's positive, otherwise returns 0.
+    leaky_relu: Leaky ReLU activation function. A variant of ReLU that allows a small gradient when the input is negative. 
+    tanh: Hyperbolic tangent activation function. Maps input to range [-1, 1]. Commonly used for normalized input.
+    sigmoid: Sigmoid activation function. Maps input to range [0, 1]. Commonly used for binary classification.
+    softmax: Softmax activation function. Maps input into a probability distribution over multiple classes.
     """
     
     @staticmethod
@@ -549,7 +560,6 @@ class Activation:
         return exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
 
 
-
 def test_model(load_data_func, nn_layers, dropout_rate, reg_lambda, test_size=0.2):
     """Generic function to test the neural network model on a given dataset."""
     import random
@@ -576,9 +586,11 @@ def test_model(load_data_func, nn_layers, dropout_rate, reg_lambda, test_size=0.
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
+    
+    activations = ['relu'] * len(nn_layers) + ['sigmoid']
 
     # Initialize the neural network and optimizer
-    nn = NeuralNetwork(nn_layers, dropout_rate=dropout_rate, reg_lambda=reg_lambda)
+    nn = NeuralNetwork(nn_layers, dropout_rate=dropout_rate, reg_lambda=reg_lambda, activations=activations)
     optimizer = AdamOptimizer(learning_rate=0.001)
 
     # Train the neural network
