@@ -3,7 +3,8 @@ import numpy as np
 class AdamOptimizer:
     """
     Adam optimizer class for training neural networks.
-    Formula derived from: https://arxiv.org/abs/1412.6980
+    Formula: w = w - alpha * m_hat / (sqrt(v_hat) + epsilon) - lambda * w 
+    Derived from: https://arxiv.org/abs/1412.6980
     Args:
         learning_rate (float, optional): The learning rate for the optimizer. Defaults to 0.001.
         beta1 (float, optional): The exponential decay rate for the first moment estimates. Defaults to 0.9.
@@ -51,6 +52,44 @@ class AdamOptimizer:
 
         layer.weights -= self.learning_rate * (m_hat / (np.sqrt(v_hat) + self.epsilon) + self.reg_lambda * layer.weights)   # Update weights, alpha * m_hat / (sqrt(v_hat) + epsilon) + lambda * weights
         layer.biases -= self.learning_rate * db                                                                             # Update biases, alpha * db
+
+class SGDOptimizer:
+    """
+    Stochastic Gradient Descent (SGD) optimizer class for training neural networks.
+    Formula: w = w - learning_rate * dW, b = b - learning_rate * db
+    Args:
+        learning_rate (float, optional): The learning rate for the optimizer. Defaults to 0.001.
+        momentum (float, optional): The momentum factor. Defaults to 0.0.
+        reg_lambda (float, optional): The regularization parameter. Defaults to 0.0.
+    """
+    def __init__(self, learning_rate=0.001, momentum=0.0, reg_lambda=0.0):
+        self.learning_rate = learning_rate      # Learning rate
+        self.momentum = momentum                # Momentum factor
+        self.reg_lambda = reg_lambda            # Regularization parameter
+        self.velocity = []                      # Velocity for momentum
+
+    def initialize(self, layers):
+        """
+        Initializes the velocity for each layer's weights.
+        Args: layers (list): List of layers in the neural network.
+        Returns: None
+        """
+        for layer in layers:                                    # For each layer in the neural network..
+            self.velocity.append(np.zeros_like(layer.weights))  # Initialize velocity
+
+    def update(self, layer, dW, db, index):
+        """
+        Updates the weights and biases of a layer using the SGD optimization algorithm.
+        Args:
+            layer (Layer): The layer to update.
+            dW (ndarray): The gradient of the weights.
+            db (ndarray): The gradient of the biases.
+            index (int): The index of the layer.
+        Returns: None
+        """
+        self.velocity[index] = self.momentum * self.velocity[index] - self.learning_rate * dW           # Update velocity
+        layer.weights += self.velocity[index] - self.learning_rate * self.reg_lambda * layer.weights    # Update weights
+        layer.biases -= self.learning_rate * db                                                         # Update biases
 
 class lr_scheduler_step:
     """
