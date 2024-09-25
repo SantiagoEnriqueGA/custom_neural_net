@@ -80,7 +80,7 @@ def hyper_train_and_evaluate_model(X, y ,X_train, X_test, y_train, y_test, param
 def main():
     # Define parameter grid and tuning ranges
     param_grid = {
-        'dropout_rate': [0.1, 0.2],
+        'dropout_rate': [0.1, 0.2, 0.3,0.3,0.4,0.5,0.6,0.7,0.8,],
         'reg_lambda': [0.0, 0.01]
     }
     num_layers_range = (2, 5, 1)  # min, max, step
